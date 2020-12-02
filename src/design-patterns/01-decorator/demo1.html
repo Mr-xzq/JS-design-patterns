@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div class="contain">
+    <button id='btn1'>点击btn1</button>
+  </div>
+  <script>
+    const btn1 = document.getElementById('btn1')
+    btn1.addEventListener('click', function() {
+      console.log(this)  // 就是该DOM元素
+    })
+    const obj1 = {
+      do: () => {
+        console.log(this)  // 因为外层没有function, 因此直接绑定的就是GO的this  然后GO的this又是指向window
+      },
+      do1: function(){
+        console.log(this)
+        return () => {
+          console.log(this) // 这里就是绑定的外层function的作用域链, 外层funtion的this是谁, 箭头函数的this就指向谁
+        }
+      }
+    }
+    obj1.do()
+    obj1.do1()()
+    const func = obj1.do
+    func()
+    btn1.addEventListener('click', obj1.do)
+    
+    // const getElementById = document.getElementById
+    // const btn11 = getElementById('btn1')
+  </script>
+</body>
+</html>
