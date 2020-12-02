@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="container">
+    <input type="text" id="user-name">
+    <input type="text" id="password">
+    <input type="button" id="submit" value="提交">
+  </div>
+  <script>
+    const userNameInput = document.getElementById('user-name')
+    const passwordInput = document.getElementById('password')
+    const submitButton = document.getElementById('submit')
+    // 这里有一个问题, 校验和发送请求都放在一个login函数中, 耦合程度太高, 并且没有复用性, 如果我们想改变校验规则, 就需要去改变login这个函数
+    // const login = function () {
+    //   let userName = userNameInput.value
+    //   let password = passwordInput.value
+    //   // 校验规则, 如果有用户名或者密码一个为空, 那么直接中断
+
+    //   // 发送登录请求
+    //   console.log('发送登录请求')
+    // }
+
+    // 重构1  将validate和发送请求分离开
+    const validate = function () {
+      let userName = userNameInput.value
+      let password = passwordInput.value
+      if (userName && password) {
+        return true
+      } else {
+        return false
+      }
+    }
+
+    const callLoginApi = function () {
+      console.log('发送登录请求')
+    }
+    // 虽然这里我们将validate和login分离开了, 但是如果要改变校验规则, 那么就需要去深入改变validate方法
+    // 毕竟我们知道校验规则应该变成可以配置的则是最好的
+    // const login = function () {
+    //   let userName = userNameInput.value
+    //   let password = passwordInput.value
+    //   // 校验规则, 如果有用户名或者密码一个为空, 那么直接中断
+    //   let validateRes = validate(userName, password)
+    //   // 发送登录请求
+    //   if(validateRes){
+    //     callLoginApi()
+    //   }
+    // }
+    Function.prototype.before = function (beforeFn) {
+      let _self = this
+      return function () {
+        if (beforeFn.apply(this, arguments) === false) return // 如果这里校验函数返回值为false, 则直接终止
+        return _self.apply(this, arguments) // 执行原函数
+      }
+    }
+    let login = function () {
+      callLoginApi()
+    }
+    login = login.before(validate)
+    submitButton.addEventListener('click', login)
+  </script>
+</body>
+
+</html>

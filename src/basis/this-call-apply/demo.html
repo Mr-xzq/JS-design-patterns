@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .container {
+      width: 300px;
+      height: 300px;
+      background-color: #000;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container"></div>
+  <script>
+    // const divCollection = document.getElementsByClassName('container')
+    // divCollection[0].addEventListener('click', () => {
+    //   console.log('a')
+    // })
+    // 错误写法
+    // const getEleByClassName = document.getElementsByClassName
+    // 正确写法
+    const getEleByClassName = function () {
+      return document.getElementsByClassName.apply(document, Array.prototype.slice.apply(arguments, [0, 1]))
+    }
+    const divCollection = getEleByClassName('container') // Illegal invocation   因为这个时候的this指向改成window了, 而在原函数中是需要对this的引用指向这个documet对象的
+    // console.log(divCollection[0])
+
+
+    // 要注意的是  关于箭头函数this指向的问题, ()=>{}它的this在预编译时期就是绑定在父级作用域链里, 它自身是没有this指向的, 并且箭头函数没有arguments, 并且也不能是构造函数(由于没有自己的this)
+    // 即使是通过bind, call, apply手动改变this也无法实现, 因为前者是通过语法层面改变this的绑定, 而()=>{}是在词法层面(可以看作预编译时期, 定义时期), this的绑定就已经在父级作用域链中
+    divCollection[0].addEventListener('click', () => {
+      console.log(this)
+    })
+    /**
+     * ()=>{} 定义时期 就是在父级执行的时期的作用域链  ---->   scope chain  --->  0 GO {
+     *                                                                            this: window
+     *                                                                            window: object
+     *                                                                            document: object
+     *                                                                            getEleByClassName: function
+     *                                                                            divCollection: 伪数组[]
+     *                                                                              }
+     * 箭头函数绑定的就是父级的作用域链, 这一刻它的父级就是GO, 然后直接找到GO的this, 绑定上去, 所以这里的this绑定的是window
+     * */ 
+  </script>
+</body>
+
+</html>

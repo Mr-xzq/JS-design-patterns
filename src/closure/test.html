@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <ul>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+    <li>5</li>
+  </ul>
+</body>
+<script>
+  // 第一题
+  var liCollection = document.querySelectorAll('li')
+  // for (var i = 0; i < liCollection.length; i++) {
+  //   liCollection[i].addEventListener('click', function () {
+  //     console.log(i)
+  //   })
+  // }
+  // 输出都是5  这里是同样的问题, 同样也是内部的function被保存到了外部, 这里是内部的function被保存到了外部的li DOM节点上
+  // 那么就会导致多个内部的函数访问一个外部的AO
+  for (var i = 0; i < liCollection.length; i++) {
+    (function (param) {
+      liCollection[param].addEventListener('click', function () {
+        console.log(param)
+      })
+    }(i))
+  }
+  // 这里采用立即执行函数, 让被保存到外部的函数可所访问的环境发生变化, 这一刻内部函数所处的环境就是这个立即执行函数, 经过预编译, 形参与实参相统一, param就变成了0  1  2  3  4, 直接变成现有的值, 然后内部函数所访问的AO就是5个不同的立即执行函数的AO, 然后就会有五个不同的param
+
+  // 第二题
+  function demo(e){
+    console.log(e) // function e(){}
+    function e(){}
+    arguments[0] = 2  // e 变为 2
+    console.log(e)   // 2
+    // 要注意的是 执行函数所对函数进行的预编译生成AO对象时, 并不会观察if能不能进入, 即使不能进入, 也会扫描里面的变量等
+    // 这里有点问题的就是 在新的规范中不能再if中声明函数, 但是我们这里就假设可以声明
+    if(a){ // a为undefined  因此进不去判断
+      var b = 123  // 但是b以就会被放到AO中  只不过值为undefined
+      function c() {}
+    }
+    var c
+    a = 10  // 由于本函数的AO中已经有a的声明, 因此这里赋值的时给demo ---> AO:{a: 10}
+    var a
+    console.log(b)
+    f = 123   // 在GO上挂载 f  值为 123
+    console.log(c)   // 如果单纯按照做题的话, 不考虑语法问题的话, 那么这里应该时function c(){}
+    console.log(a)  //  undefined
+  }
+  console.log(a)   // undefined
+  var a
+  demo(1)
+  console.log(a)   // undefined  这里访问的是GO的a
+  console.log(f)   // 123
+  /**
+   * 首先要预编译, 然后才是执行语句
+   * GO: {
+   *  demo: function demo(){}
+   *  a: undefined
+   * }
+   * demo执行的前一刻预编译
+   *  AO: {
+   *  e: 1  然后变成  function e
+   *  b: undefined
+   *  c: function c(){}
+   *  a: undefined
+   * }
+   * 然后开始正式执行
+   * 
+   * 
+  */
+</script>
+
+</html>
