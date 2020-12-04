@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="container">
+    <input type="text" class="user-name">
+    <input type="text" class="password">
+    <input type="button" id="submitBtn" value="提交">
+  </div>
+  <script>
+    // 添加两条校验逻辑
+    // 1. 用户名不能为空
+    // 2. 密码长度不能少于6位
+    const userNameInput = document.querySelector('.user-name')
+    const passwordInput = document.querySelector('.password')
+    const submitBtn = document.querySelector('#submitBtn')
+    const validateFunc = function () {
+      let errorMsg = []
+      let flag = true
+      if (!userNameInput.value) {
+        errorMsg.push('用户名不能为空')
+        flag = false
+      }
+      if (passwordInput.value.length < 6) {
+        errorMsg.push('密码长度不能少于6位')
+        flag = false
+      }
+      let resErrorMsg = ''
+      for (let i = 0, length = errorMsg.length, msg; msg = errorMsg[i]; i++) {
+        if (i === length - 1) {
+          resErrorMsg += (msg)
+        } else {
+          resErrorMsg += (msg + ',')
+        }
+      }
+      return { validateRes: flag, resErrorMsg }
+    }
+    // submitBtn.addEventListener('click', function() {
+    //   const { validateRes, resErrorMsg } = validateFunc()
+    //   if(validateRes) {
+    //     console.log('校验通过, 发送请求')
+    //   }else {
+    //     console.log('resErrorMsg', resErrorMsg)
+    //   }
+    // })
+
+    // 看一看上面那种硬编码方式的缺陷, 将所有的校验都放在validateFunc中, 然后通过各种if来判断, 如果后期维护, 就需要去改变validateFunc内部的代码
+    // 违反了开闭原则, 缺少弹性, 如果要增加校验, 就需要继续增加if
+    // 这里可以采用策略模式
+    // 1. 为同一个input绑定单独的规则
+    const strategys = {
+      errorMsg: '',
+      resValidata: true,
+      restore() {
+        this.errorMsg = ''
+        this.resValidata = true
+      },
+      isNonEmpty: function (input) {
+        if (!input.value) {
+          this.errorMsg += '输入值不能为空 '
+          this.resValidata = false
+        }
+      },
+      minLength: function (input, length = 10) {
+        if (input.value.length <= length) {
+          this.errorMsg += `输入值长度不能小于${length}`
+          this.resValidata = false
+        }
+      }
+    }
+    // 将属性或者方法直接写在构造函数中, 就表示所有实例都有一份自己的独立的属性或者方法, 每一次new都会创建一份全新的
+    const Valiadator = function () {
+      this.catche = []
+    }
+    // 将属性或者方法直接写在构造函数的原型中, 意味着所有通过该构造函数实例化的对象都有一份公有的属性或者方法, 不会去创建全新的
+    // 原型中通过this可以访问到实例对象中的属性或者方法
+    Valiadator.prototype.add = function (input, strategy) {
+      // 闭包: 内部函数拿着外部函数的作用域链, 也就是外部函数执行时候的环境, 内部函数定义时的环境就是外部函数执行时的环境
+      // 内部函数的引用如果被保存到外部, 就意味着外部函数执行完之后无法销毁内部函数的对象, 然后导致外部函数的作用域链被内部函数拿着
+      // 除非在外部手动消除引用
+      const tempArr = strategy.split(':')
+      let strategyKey = tempArr.shift()
+      let option = tempArr.shift()
+      // this.catche.push( (function(input, strategyKey, option) {
+      //   console.log(strategyKey)
+      //   return strategys[strategyKey].bind(strategys, [input, option])
+      // }(input, strategyKey, option) ))
+      // 会报错, 
+      this.catche.push(function () {
+        return strategys[strategyKey].apply(strategys, [input, option])
+      })
+    }
+    // 2. 为同一个input绑定多个不同的规则
+    // Valiadator.prototype.add = function (input, stras) {
+    //   for (let i = 0, strategy; strategy = stras[i]; i++) {
+    //     this.catche.push(function () {
+    //       const tempArr = strategy.split(':')
+    //       let strategyKey = tempArr.shift()
+    //       let option = tempArr.shift()
+    //       return strategys[strategyKey].apply(strategys, [input, option])
+    //     })
+    //   }
+    // }
+    Valiadator.prototype.start = function () {
+      for (let i = 0, validateFunc; validateFunc = this.catche[i]; i++) {
+        validateFunc()
+      }
+      return { validateRes: strategys.resValidata, resErrorMsg: strategys.errorMsg }
+    }
+    Valiadator.prototype.end = function () {
+      strategys.restore()
+    }
+    // submitBtn.addEventListener('click', function () {
+    //   const validator = new Valiadator()
+    //   // validator.add(userNameInput, ['isNonEmpty', 'minLength:5'])
+    //   validator.add(passwordInput, 'minLength:5')
+    //   const { validateRes, resErrorMsg } = validator.start()
+    //   if (!validateRes) {
+    //     console.log(resErrorMsg)
+    //   } else {
+    //     console.log('校验通过')
+    //   }
+    //   validator.end()
+    // })
+    const generateMsg = function (errMsgArr) {
+      let res = ''
+      errMsgArr.forEach((item, index, arr) => {
+        if (index === arr.length - 1) {
+          res += item
+        } else {
+          res += (item + ', ')
+        }
+      })
+      return res
+    }
+    // 上面都是基于面向对象的思想, 其实在JS中可以直接采用高阶函数的方式
+    const funcValidate = function (input, valiadate) {
+      let resValidata = true
+      const resMsg = []
+      if (!Array.isArray(valiadate)) {
+        valiadate = [valiadate]
+      }
+      valiadate.forEach(({ valiadateFunc, errorMsg, options }, index) => {
+        const { res, erMsg } = valiadateFunc.apply(input, [input.value, errorMsg, options])
+        if (!res) {
+          resMsg.push(erMsg)
+          resValidata = false
+        }
+      })
+      let resErrorMsg = generateMsg(resMsg)
+      return { resData: resValidata, resErrorMsg }
+    }
+    const funcStrategy = {
+      isNonEmpty: function (value, errorMsg) {
+        if (!value) {
+          return { res: false, erMsg: errorMsg }
+        } else {
+          return { res: true }
+        }
+      },
+      minLength: function (value, errorMsg, { minLength = 10 } = {}) {
+        if (value.length <= minLength) {
+          return { res: false, erMsg: errorMsg, minLength }
+        } else {
+          return { res: true }
+        }
+      }
+    }
+    submitBtn.addEventListener('click', function () {
+      const { resData, resErrorMsg } = funcValidate(userNameInput,
+        [
+          { valiadateFunc: funcStrategy.isNonEmpty, errorMsg: '输入值不能为空' },
+          { valiadateFunc: funcStrategy.minLength, errorMsg: `输入值长度不能小于5`, options: { minLength: 5 } }
+        ]
+      )
+      if (!resData) {
+        console.log(resErrorMsg)
+      } else {
+        console.log('校验通过')
+      }
+    })
+  </script>
+</body>
+
+</html>
